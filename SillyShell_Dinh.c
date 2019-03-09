@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <string.h>
 
+/* Brian Dinh's Silly Shell */
+
 void parse(char *line, char **argv)
 {
      while (*line != '\0')
@@ -23,6 +25,7 @@ void parse(char *line, char **argv)
               line++;
           }
         }
+    
      *argv = NULL;
 }
 
@@ -41,7 +44,7 @@ void execute(char **argv)
     }
     else if (pid == 0) // if pid of 0, then it is the child process
     {
-        execvp(*argv, argv);
+        execvp(*argv, argv); // the child process will rewrite its text segment to match the external command. it will pass right amount of parameters whether it is 0 parameters or n parameters
     }
     else // if pid returned is not -1 (error) or 0 (child process), then it is the parent process
     {
@@ -55,22 +58,22 @@ void execute(char **argv)
             {
                 if (WEXITSTATUS(status) == 127) // if
                 {
-                    printf("\n%s failed\n", *argv); // execv failed
+                    printf("\n%s failed\n\n", *argv); // execv failed
                 }
                 else
                 {
-                    printf("\n%s terminated normally, but returned a non-zero status\n", *argv);
+                    printf("\n%s terminated normally, but returned a non-zero status\n\n", *argv);
                 }
             }
             else
             {
-                printf("\n%s didn't terminate normally\n", *argv);
+                printf("\n%s didn't terminate normally\n\n", *argv);
             }
 
         }
         else 
         {
-            printf("waitpid() failed\n");
+            printf("waitpid() failed\n\n");
         }
     }
 }
@@ -89,10 +92,10 @@ void printenv(char **envp)
 }
 
 
-int main(void)
+int main(int argc, char **argv, char **envp)
 {
-     char  line[1024];
-     char  *largv[64];
+     char line[1024];
+     char *largv[64];
      char shell_prompt[16];
 
      strcpy(shell_prompt, "DinhsSillyShell");
@@ -110,7 +113,7 @@ int main(void)
              parse(line, largv);
              
              if (strcmp(largv[0], "exit") == 0 || strcmp(largv[0], "done") == 0 || strcmp(largv[0], "quit") == 0) exit(0); else
-                 if (strcmp(largv[0], "printenv")  == 0) printenv(largv); else
+                 if (strcmp(largv[0], "printenv")  == 0) printenv(envp); else
                      if (strcmp(largv[0], "newprompt") == 0)
                      {
                          if (largv[1] != NULL)
