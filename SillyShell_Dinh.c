@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
 
 /* Brian Dinh's Silly Shell */
 
@@ -29,6 +30,7 @@ void parse(char *line, char **argv)
      *argv = NULL;
 }
 
+/* Task 1 */
 void execute(char **argv)
 {
     pid_t pid;
@@ -56,9 +58,9 @@ void execute(char **argv)
             }
             else if (WIFEXITED(status) && WEXITSTATUS(status))
             {
-                if (WEXITSTATUS(status) == 127) // if
+                if (WEXITSTATUS(status) == 127) // detects if the execvp system call fails
                 {
-                    printf("\n%s failed\n\n", *argv); // execv failed
+                    printf("\n%s failed\n\n", *argv);
                 }
                 else
                 {
@@ -78,55 +80,78 @@ void execute(char **argv)
     }
 }
 
+/* Task 2 */
 void printenv(char **envp)
 {
     printf("Let's print out all the environment variables\n\n");
     
     while (*envp != NULL)
     {
-        printf("%s\n", *envp);
+        printf("%s\n", *envp); // prints out all environment variables
         envp++;
     }
     
     printf("Well, that just about does it.\n\n");
 }
 
+/*
+ We need to handle ctrl-c & ctrl d.
+ 
+ ctrl-c: should interrupt only for a running child process
+ 
+ ctrl-d: quit silly shell
+ */
+
+/* Task 3 */
+void signalHandler(int signalType)
+{
+    printf("handled with signal %d\n", signalType);
+}
+
+void signalHandler2(int signalType)
+{
+    
+}
 
 int main(int argc, char **argv, char **envp)
 {
-     char line[1024];
-     char *largv[64];
-     char shell_prompt[16];
-
-     strcpy(shell_prompt, "DinhsSillyShell");
+    char line[1024];
+    char *largv[64];
+    char shell_prompt[33];
     
-     while (1)
-     {
-         printf("%s> ",shell_prompt);
-         
-         fgets(line, 1024, stdin);
-         
-         line[strlen(line)-1]='\0';
-         
-         if (*line != '\0')
-         {
-             parse(line, largv);
-             
-             if (strcmp(largv[0], "exit") == 0 || strcmp(largv[0], "done") == 0 || strcmp(largv[0], "quit") == 0) exit(0); else
-                 if (strcmp(largv[0], "printenv")  == 0) printenv(envp); else
-                     if (strcmp(largv[0], "newprompt") == 0)
-                     {
-                         if (largv[1] != NULL)
-                             strncpy(shell_prompt, largv[1], 16);
-                         else
-                             strncpy(shell_prompt, "DinhsSillyShell", 16);
-                     }
-                     else
-                     {
-                         execute(largv);
-                     }
-         }
-     }
+    strcpy(shell_prompt, "BrianDinhsSuperAwesomeSillyShell");
+    
+    signal(SIGTERM, signalHandler); // attaches signal to appropiate function
+    signal(SIGINT, signalHandler2);
+    
+    while (1)
+    {
+        printf("%s> ",shell_prompt);
+        
+        fgets(line, 1024, stdin);
+        
+        line[strlen(line)-1]='\0';
+        
+        if (*line != '\0')
+        {
+            parse(line, largv);
+            
+            if (strcmp(largv[0], "exit") == 0 || strcmp(largv[0], "done") == 0 || strcmp(largv[0], "quit") == 0) exit(0); else
+                if (strcmp(largv[0], "printenv")  == 0) printenv(envp); else
+                    if (strcmp(largv[0], "newprompt") == 0)
+                    {
+                        if (largv[1] != NULL)
+                            strncpy(shell_prompt, largv[1], 33);
+                        else
+                            strncpy(shell_prompt, "BrianDinhsSuperAwesomeSillyShell", 33);
+                    }
+                    else
+                    {
+                        execute(largv);
+                    }
+        }
+    }
+    
 }
 
                 
