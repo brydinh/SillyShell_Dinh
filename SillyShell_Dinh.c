@@ -46,7 +46,7 @@ void execute(char **argv)
     }
     else if (pid == 0) // if pid of 0, then it is the child process
     {
-        execvp(*argv, argv); // the child process will rewrite its text segment to match the external command. it will pass right amount of parameters whether it is 0 parameters or n parameters
+        execvp(*argv, argv); // the child process will rewrite its text segment to match the external command. it will pass right amount of parameters whether it is 0 parameters through n parameters
     }
     else // if pid returned is not -1 (error) or 0 (child process), then it is the parent process
     {
@@ -62,18 +62,18 @@ void execute(char **argv)
                 {
                     printf("\n%s failed\n\n", *argv);
                 }
-                else
+                else // detects that if the child process returns a non-zero status
                 {
                     printf("\n%s terminated normally, but returned a non-zero status\n\n", *argv);
                 }
             }
-            else
+            else // detects that the child process does not terminate regularly
             {
                 printf("\n%s didn't terminate normally\n\n", *argv);
             }
 
         }
-        else 
+        else // detects if the waitpid() system call fails
         {
             printf("waitpid() failed\n\n");
         }
@@ -83,19 +83,21 @@ void execute(char **argv)
 /* Task 2 */
 void printenv(char **envp)
 {
-    printf("Let's print out all the environment variables\n\n");
+    char *substring_pointer;
     
+    printf("Print all env variables containing SHELL in the name\n");
     while (*envp != NULL)
-    {
-        printf("%s\n", *envp); // prints out all environment variables
+    { substring_pointer = strstr(*envp, "SHELL");
+        if (substring_pointer != NULL) printf("%s\n", *envp);
         envp++;
     }
-    
     printf("Well, that just about does it.\n\n");
 }
 
 /*
  We need to handle ctrl-c & ctrl d.
+ 
+ handle ctrl-c.
  
  ctrl-c: should interrupt only for a running child process
  
@@ -103,15 +105,7 @@ void printenv(char **envp)
  */
 
 /* Task 3 */
-void signalHandler(int signalType)
-{
-    printf("handled with signal %d\n", signalType);
-}
-
-void signalHandler2(int signalType)
-{
-    
-}
+void doNothing(int signum){ /*Do nothing if Ctrl-C is detected*/}
 
 int main(int argc, char **argv, char **envp)
 {
@@ -121,35 +115,42 @@ int main(int argc, char **argv, char **envp)
     
     strcpy(shell_prompt, "BrianDinhsSuperAwesomeSillyShell");
     
-    signal(SIGTERM, signalHandler); // attaches signal to appropiate function
-    signal(SIGINT, signalHandler2);
+    signal(SIGINT, doNothing); // attaches ignore signal for ctrl-c
     
     while (1)
     {
         printf("%s> ",shell_prompt);
         
-        fgets(line, 1024, stdin);
-        
-        line[strlen(line)-1]='\0';
-        
-        if (*line != '\0')
+        if(fgets(line, 1024, stdin) == NULL)
         {
-            parse(line, largv);
-            
-            if (strcmp(largv[0], "exit") == 0 || strcmp(largv[0], "done") == 0 || strcmp(largv[0], "quit") == 0) exit(0); else
-                if (strcmp(largv[0], "printenv")  == 0) printenv(envp); else
-                    if (strcmp(largv[0], "newprompt") == 0)
-                    {
-                        if (largv[1] != NULL)
-                            strncpy(shell_prompt, largv[1], 33);
-                        else
-                            strncpy(shell_prompt, "BrianDinhsSuperAwesomeSillyShell", 33);
-                    }
-                    else
-                    {
-                        execute(largv);
-                    }
+            printf("Detected Ctrl-d, Good-bye!\n");
+            exit(0);
         }
+        else
+        {
+            line[strlen(line)-1]='\0';
+            
+            if (*line != '\0')
+            {
+                parse(line, largv);
+                
+                if (strcmp(largv[0], "exit") == 0 || strcmp(largv[0], "done") == 0 || strcmp(largv[0], "quit") == 0) exit(0); else
+                    if (strcmp(largv[0], "printenv")  == 0) printenv(envp); else
+                        if (strcmp(largv[0], "newprompt") == 0)
+                        {
+                            if (largv[1] != NULL)
+                                strncpy(shell_prompt, largv[1], 33);
+                            else
+                                strncpy(shell_prompt, "BrianDinhsSuperAwesomeSillyShell", 33);
+                        }
+                        else
+                        {
+                            execute(largv);
+                        }
+            }
+        }
+        
+     
     }
     
 }
