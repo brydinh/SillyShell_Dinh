@@ -82,13 +82,15 @@ void execute(char **argv)
             
         }
         else
-        {  /* *** if background status is not equal to 0 (it is equal to 1), do NOT wait for the child, resume normal execution. *** */
+        {
+            // *** if background status is not equal to 0 (it is equal to 1), do NOT wait for the child, resume normal execution. ***
+            
             backgroundStatus = 0; // reset backgroundStatus back to false for more checks
         }
     }
 }
 
-void printenv(char **envp) // prints out all environment variables to the shell by
+void printenv(char **envp) // prints out all current shell's environment variables by detecting SHELL in the name
 {
     char *substring_pointer;
     
@@ -96,7 +98,7 @@ void printenv(char **envp) // prints out all environment variables to the shell 
     
     while (*envp != NULL)
     {
-        substring_pointer = strstr(*envp, "SHELL"); // gets information from SHELL only
+        substring_pointer = strstr(*envp, "SHELL"); // gets from SHELL only
         
         if (substring_pointer != NULL) printf("%s\n", *envp);
         
@@ -114,7 +116,7 @@ int main(int argc, char **argv, char **envp)
     char *largv[64];
     char shell_prompt[33];
     
-    strcpy(shell_prompt, "BrianDinhsSuperAwesomeSillyShell"); // give my shell a super awesome name
+    strcpy(shell_prompt, "BrianDinhsSuperAwesomeSillyShell"); // give my shell a super awesome radical name
     
     signal(SIGINT, doNothing); // attaches ignore signal for ctrl-c
     
@@ -122,7 +124,7 @@ int main(int argc, char **argv, char **envp)
     {
         printf("%s> ",shell_prompt);
         
-        if (fgets(line, 1024, stdin) == NULL) // if fgets routine returns NULL, we know that the user inputed ctrl-d, therefore quit the program when this detection occurs
+        if (fgets(line, 1024, stdin) == NULL) // if fgets routine returns NULL, we know that the user inputed ctrl-d, therefore quit program when this detection occurs
         {
             printf("Detected Ctrl-d, Good-bye!\n");
             exit(0);
@@ -148,11 +150,11 @@ int main(int argc, char **argv, char **envp)
                         {
                             if(largv[1] != NULL)
                             {
-                                if (strcmp(largv[1], "&") == 0) // if the second token is &, set "boolean" backgroundStatus to be true (1)
+                                if (strcmp(largv[1], "&") == 0) // if the last token is &, set "boolean" backgroundStatus to be true (1)
                                 {
                                     backgroundStatus = 1;
                                 }
-                                else // if second parameter is not &, set "boolean" backgroundStatus to be false (0)
+                                else // if last token is not &, set "boolean" backgroundStatus to be false (0)
                                 {
                                     backgroundStatus = 0;
                                 }
