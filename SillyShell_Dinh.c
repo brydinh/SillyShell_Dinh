@@ -1,4 +1,3 @@
-#include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -8,6 +7,8 @@
 #include <signal.h>
 
 /* Brian Dinh's Silly Shell */
+
+int backgroundStatus;
 
 void parse(char *line, char **argv)
 {
@@ -30,7 +31,6 @@ void parse(char *line, char **argv)
      *argv = NULL;
 }
 
-/* Task 1 */
 void execute(char **argv)
 {
     pid_t pid;
@@ -39,73 +39,74 @@ void execute(char **argv)
     int status;
     
     pid = fork(); // creates child process
-    
+
     if (pid == -1) // forking error is detected
     {
         printf("Fork Error\n");
     }
     else if (pid == 0) // if pid of 0, then it is the child process
     {
-        execvp(*argv, argv); // the child process will rewrite its text segment to match the external command. it will pass right amount of parameters whether it is 0 parameters through n parameters
+           execvp(*argv, argv); // the child process will rewrite its text segment to match the external command. it will pass right amount of parameters whether it is 0 parameters or n parameters
     }
     else // if pid returned is not -1 (error) or 0 (child process), then it is the parent process
     {
-        if (waitpid(pid, &status, 0) > 0) // waitpid() puts parent execution on hold until child process has changed state
+        if(backgroundStatus == 0) // if background status is false (0), then the parent execution will be on hold until child process has changed state
         {
-            if (WIFEXITED(status) && !WEXITSTATUS(status)) // detects if the child process has returned a successful state
+            if (waitpid(pid, &status, 0) > 0) // waitpid() puts parent execution on hold until child process has changed state
             {
-                printf("\n%s executed successfully\n\n", *argv);
-            }
-            else if (WIFEXITED(status) && WEXITSTATUS(status))
-            {
-                if (WEXITSTATUS(status) == 127) // detects if the execvp system call fails
+                if (WIFEXITED(status) && !WEXITSTATUS(status)) // detects if the child process has returned a successful state
                 {
-                    printf("\n%s failed\n\n", *argv);
+                    printf("\n%s executed successfully\n\n", *argv);
                 }
-                else // detects that if the child process returns a non-zero status
+                else if (WIFEXITED(status) && WEXITSTATUS(status))
                 {
-                    printf("\n%s terminated normally, but returned a non-zero status\n\n", *argv);
+                    if (WEXITSTATUS(status) == 127) // detects if the execvp system call fails
+                    {
+                        printf("\n%s failed\n\n", *argv);
+                    }
+                    else // detects that if the child process returns a non-zero status
+                    {
+                        printf("\n%s terminated normally, but returned a non-zero status\n\n", *argv);
+                    }
                 }
+                else // detects that the child process does not terminate regularly
+                {
+                    printf("\n%s didn't terminate normally\n\n", *argv);
+                }
+                
             }
-            else // detects that the child process does not terminate regularly
+            else // detects if the waitpid() system call fails
             {
-                printf("\n%s didn't terminate normally\n\n", *argv);
+                printf("waitpid() failed\n\n");
             }
-
+            
         }
-        else // detects if the waitpid() system call fails
-        {
-            printf("waitpid() failed\n\n");
+        else
+        {  /* *** if background status is not equal to 0 (it is equal to 1), do NOT wait for the child, resume normal execution. *** */
+            backgroundStatus = 0; // reset backgroundStatus back to false for more checks
         }
     }
 }
 
-/* Task 2 */
-void printenv(char **envp)
+void printenv(char **envp) // prints out all environment variables to the shell by
 {
     char *substring_pointer;
     
     printf("Print all env variables containing SHELL in the name\n");
+    
     while (*envp != NULL)
-    { substring_pointer = strstr(*envp, "SHELL");
+    {
+        substring_pointer = strstr(*envp, "SHELL"); // gets information from SHELL only
+        
         if (substring_pointer != NULL) printf("%s\n", *envp);
+        
         envp++;
     }
+    
     printf("Well, that just about does it.\n\n");
 }
 
-/*
- We need to handle ctrl-c & ctrl d.
- 
- handle ctrl-c.
- 
- ctrl-c: should interrupt only for a running child process
- 
- ctrl-d: quit silly shell
- */
-
-/* Task 3 */
-void doNothing(int signum){ /*Do nothing if Ctrl-C is detected*/}
+void doNothing(int signum){ /* Do nothing if Ctrl-C is detected */ }
 
 int main(int argc, char **argv, char **envp)
 {
@@ -113,7 +114,7 @@ int main(int argc, char **argv, char **envp)
     char *largv[64];
     char shell_prompt[33];
     
-    strcpy(shell_prompt, "BrianDinhsSuperAwesomeSillyShell");
+    strcpy(shell_prompt, "BrianDinhsSuperAwesomeSillyShell"); // give my shell a super awesome name
     
     signal(SIGINT, doNothing); // attaches ignore signal for ctrl-c
     
@@ -121,7 +122,7 @@ int main(int argc, char **argv, char **envp)
     {
         printf("%s> ",shell_prompt);
         
-        if(fgets(line, 1024, stdin) == NULL)
+        if (fgets(line, 1024, stdin) == NULL) // if fgets routine returns NULL, we know that the user inputed ctrl-d, therefore quit the program when this detection occurs
         {
             printf("Detected Ctrl-d, Good-bye!\n");
             exit(0);
@@ -129,7 +130,7 @@ int main(int argc, char **argv, char **envp)
         else
         {
             line[strlen(line)-1]='\0';
-            
+    
             if (*line != '\0')
             {
                 parse(line, largv);
@@ -145,14 +146,23 @@ int main(int argc, char **argv, char **envp)
                         }
                         else
                         {
+                            if(largv[1] != NULL)
+                            {
+                                if (strcmp(largv[1], "&") == 0) // if the second parameter is &, set "boolean" backgroundStatus to be true (1)
+                                {
+                                    backgroundStatus = 1;
+                                }
+                                else // if second parameter is not &, set "boolean" backgroundStatus to be false (0)
+                                {
+                                    backgroundStatus = 0;
+                                }
+                            }
+                            
                             execute(largv);
                         }
             }
         }
-        
-     
     }
-    
 }
 
                 
