@@ -148,7 +148,7 @@ int main(int argc, char **argv, char **envp)
                         {
                             if(largv[1] != NULL)
                             {
-                                if (strcmp(largv[1], "&") == 0) // if the second parameter is &, set "boolean" backgroundStatus to be true (1)
+                                if (strcmp(largv[1], "&") == 0) // if the second token is &, set "boolean" backgroundStatus to be true (1)
                                 {
                                     backgroundStatus = 1;
                                 }
